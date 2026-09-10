@@ -1,26 +1,53 @@
-name: Deploy Docs Site
+name: Deploy Docusaurus to GitHub Pages
  
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+ 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
  
 jobs:
-  build-and-deploy:
+  build:
+    name: Build Docusaurus
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
  
-      - uses: actions/setup-node@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+ 
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
  
-      - run: npm ci
+      - name: Install dependencies
+        working-directory: company-docsclassic
+        run: npm ci
  
-      - run: npm run build
+      - name: Build website
+        working-directory: company-docsclassic
+        run: npm run build
  
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Upload build
+        uses: actions/upload-pages-artifact@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
+          path: company-docsclassic/build
+ 
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+ 
+    runs-on: ubuntu-latest
+ 
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+ 
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
